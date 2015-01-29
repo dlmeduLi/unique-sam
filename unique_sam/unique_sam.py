@@ -145,10 +145,11 @@ def main():
 	alignments = {}
 	dbFileName = '.tmp.' + os.path.basename(samFileName) + '.db.~'
 	db = shelve.open(dbFileName)
-	print('Estimating Sam file line count...')
+	print('* Analyzing...')
 	totalLineCount = opcount(samFileName)
-	print('%ld lines found.' % totalLineCount)
+	print('  %ld lines found.' % totalLineCount)
 	linecount = 0
+	print('* Processing...')
 	with open(samFileName) as samFile:
 		for line in samFile:
 			# build alignment dictionary 
@@ -203,11 +204,11 @@ def main():
 				percentage = 0
 			else:
 				percentage = linecount * 1.0 / totalLineCount
-			sys.stdout.write("\rProcessing line %ld (%.2f%%)" % (linecount + 1, percentage * 100))
+			sys.stdout.write('\r  line %ld (%.2f%%)' % (linecount + 1, percentage * 100))
 			sys.stdout.flush()
 
 	# Output the result
-	print("\nWriting results...")
+	print('\n* Writing results...')
 	outputFileName = 'unique.' + os.path.basename(samFileName)
 	if(options.outputfile):
 		outputFileName = options.outputfile
@@ -216,7 +217,7 @@ def main():
 	try:
 		outfile = open(outputFileName, 'w')
 	except IOError:
-		print("error: write to output file failed!")
+		print('error: write to output file failed!')
 		sys.exit(-1)
 
 	# Output header
@@ -235,11 +236,13 @@ def main():
 		if(((score & 0xFFFF0000) >> 16) == 0):
 			outfile.write(db[key])
 			linecount += 1
-	print("%ld alignments written." % (linecount))
+	print('  %ld alignments written.' % (linecount))
 	# Clear resources
 
 	db.close()
 	os.unlink(dbFileName)
+
+	print('* Finished')
 
 
 if __name__ == '__main__':
