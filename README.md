@@ -22,6 +22,8 @@ Usage
 ```bash
 unique-sam input.sam -o output.sam
 ```
+If no `-o output.sam` option is specified, the output will be written to `unique.inputfilename.sam` by default. 
+
 For more about **unique-sam** run:
 ```bash
 unique-sam --help

@@ -125,14 +125,15 @@ def EvaluateAlignment(alignment):
 
 def main():
 	# parse the command line options
-	usage = 'usage: %prog [options] samfile'
+	usage = 'usage: %prog [options] inputfile.sam -o outputfile.sam'
 	parser = OptionParser(usage=usage, version='%prog 1.0.0')
 	parser.add_option('-o', '--output-file', dest='outputfile',
 						help='write the output to outputfile insted of stdio')
 
 	(options, args) = parser.parse_args()
 	if(len(args) != 1):
-		parser.error('incorrect number of arguments')
+		parser.print_help()
+		sys.exit(0)
 	samFileName = args[0]
 
     # Load the sam file
