@@ -6,9 +6,40 @@ import re
 import sys
 import os
 import os.path
+import subprocess
 from optparse import OptionParser
 import shelve
 from libsam import samparser
+
+# Sort SAM file with system sort program
+# sed -i '/^@/d;/!^@/q' file
+
+def SortSamFile(inputFile, outputFile):
+	if(not os.path.exists(inputFile)):
+		return False
+
+	# Make a copy of the original input file
+
+	tempFile = 'tmp.' + os.path.basename(inputFile) + '.~'
+	os.system('cp ' + inputFile + ' ' + tempFile)
+
+	# Extract the header of the input SAM file
+
+	os.system('sed -n \'/^@/p;/!^@/q\' ' + inputFile + ' > ' + outputFile)
+
+	# Remove the header in the temp file
+
+	os.system('sed -i \'/^@/d;/!^@/q\' ' + inputFile)
+
+	# Sort temp file and redirect the output 
+
+	os.system('sort ' + tempFile + ' >> ' + outputFile)
+
+	# Remove temp files
+
+	os.unlink(tempFile)
+
+	return True
 
 # Count file lines
 
@@ -22,15 +53,26 @@ def opcount(fname):
 # The algrithm should make sure that one key identify one unique read
 
 def AlignmentKey(alignment):
-	rCode = ''
+	# Get the tag of QNAME without read number
+	key = alignment.qname
+	if(re.match('.*\/[1-2]$', alignment.qname)):
+		tags = re.split('/', alignment.qname)
+		key = tags[0]
+
 	if(alignment.flag & 0x40):
-		rCode = '1'
+		key += (':' + str(alignment.pos) + ':' + str(alignment.pnext))
 	elif(alignment.flag & 0x80):
-		rCode = '2'
-	if(rCode == ''):
-		return alignment.qname
-	else:
-		return alignment.qname + '/' + rCode
+		key += (':' + str(alignment.pnext) + ':' + str(alignment.pos))
+
+	return key
+
+def AlignmentGroupKey(alignment):
+	key = alignment.qname
+	if(re.match('.*\/[1-2]$', alignment.qname)):
+		tags = re.split('/', alignment.qname)
+		key = tags[0]
+
+	return key
 
 #
 # EvaluateAlignmentCigar:
@@ -123,18 +165,109 @@ def EvaluateAlignment(alignment):
 
 		return int(round(alignment.mapq))
 
+##
+## ReadPair Object
+##
+
+class ReadPair(object):
+	def __init__(self):
+		self.read1 = None
+		self.read2 = None
+		self.score = 255
+
+	def updateScore(self):
+		self.score = 0
+		if(self.read1):
+			self.score  += EvaluateAlignment(self.read1)
+		
+		if(self.read2):
+			self.score += EvaluateAlignment(self.read2)
+	
+	def add(self, alignment):
+		if(alignment.flag & 0x40):
+			self.read1 = alignment
+			self.updateScore()
+		elif(alignment.flag & 0x80):
+			self.read2 = alignment
+			self.updateScore()
+
+	def str(self):
+		alignmentStr = ''
+		if(self.read1):
+			alignmentStr += self.read1.str()
+
+		if(self.read1 and self.read2):
+			alignmentStr += '\n'
+
+		if(self.read2):
+			alignmentStr += self.read2.str()
+
+		return alignmentStr
+
+#
+# Unique Strategy:
+# Following strategies are used to find the unique & the best alignment
+#
+# 1. Keep the alignment pair that has the highest score. If more than one pairs 
+# are found to have the same "Highest Score", these pairs will be removed. 
+#
+
+def UniquePairs(pairs, outfile):
+	bestPair = None
+	bestScore = -1
+	scoreCount = 0
+
+	for key in pairs :
+		pairRead = pairs[key]
+		if(pairRead.score > bestScore):
+			bestScore = pairRead.score
+			scoreCount = 1
+			bestPair = pairRead
+		elif(pairRead.score == bestScore):
+			scoreCount += 1
+
+	# Rule No. 1: keep the best pair
+
+	if(scoreCount <= 0 or scoreCount >= 2):
+		return 0
+
+	if(not bestPair):
+		return 0
+
+	# Rule No. 2: 
+
+	# Output this pair
+
+	outfile.write(bestPair.str() + '\n')
+
+	return 2
+
+
 def main():
 	# parse the command line options
-	usage = 'usage: %prog [options] inputfile.sam -o outputfile.sam'
+	usage = 'usage: %prog [options] input.sam -o output.sam'
 	parser = OptionParser(usage=usage, version='%prog 1.0.0')
 	parser.add_option('-o', '--output-file', dest='outputfile',
-						help='write the output to outputfile insted of stdio')
+						help='write the result to output file')
+	parser.add_option('-s', '--sort', 
+						action="store_true", dest="sort", default=False,
+						help='sort the input SAM file before further processing')
 
 	(options, args) = parser.parse_args()
 	if(len(args) != 1):
 		parser.print_help()
 		sys.exit(0)
-	samFileName = args[0]
+	inputFileName = args[0]
+	samFileName = inputFileName
+	isSamFileTemp = False
+
+	if(options.sort):
+		print('* Sorting...')
+		samFileName = 'sorted.' + os.path.basename(inputFileName)
+		if(not SortSamFile(inputFileName, samFileName)):
+			print('error: Failed to sort file "', inputFileName, '"')
+			sys.exit(-1)
+		isSamFileTemp = True
 
     # Load the sam file
 
@@ -142,15 +275,28 @@ def main():
 		print('error: Failed to open file "', samFileName, '"')
 		sys.exit(-1)
 
-	sam = samparser.Sam()
-	alignments = {}
-	dbFileName = '.tmp.' + os.path.basename(samFileName) + '.db.~'
-	db = shelve.open(dbFileName)
+	# prepare the output file
+
+	outputFileName = 'unique.' + os.path.basename(inputFileName)
+	if(options.outputfile):
+		outputFileName = options.outputfile
+
+	try:
+		outfile = open(outputFileName, 'w')
+	except IOError:
+		print('error: write to output file failed!')
+		sys.exit(-1)
+
+	# processing file
+
 	print('* Analyzing...')
 	totalLineCount = opcount(samFileName)
 	print('  %ld lines found.' % totalLineCount)
-	linecount = 0
+	lineCount = 0
+	writtenLineCount = 0
 	print('* Processing...')
+	pairs = {}
+	currentGroupKey = ''
 	with open(samFileName) as samFile:
 		for line in samFile:
 			# build alignment dictionary 
@@ -158,92 +304,53 @@ def main():
 			if(re.match('^\s*$', line)):
 				continue
 			elif(line[0] == '@'):
-
-				# parse and  store header line
-				
-				sam.parseLine(line)
-
+				outfile.write(line)
 			else:
 				alignment = samparser.SamAlignment()
 				if(alignment.parse(line.strip())):
 					
-					# build dictionary
+					# Write result
+
+					groupKey  = AlignmentGroupKey(alignment)
+					if(groupKey != currentGroupKey):
+						currentGroupKey = groupKey
+						writtenLineCount += UniquePairs(pairs, outfile)
+						pairs.clear()
+
+					# Pair up
 
 					key = AlignmentKey(alignment)
-					score = EvaluateAlignment(alignment)
-					alignment.mapq = score
-
-					if(key in alignments):
-						# compare the mapq value
-
-						# oldAlignment = alignments[key]
-						# currentScore = (oldAlignment.mapq & 0xFF)
-						value = alignments[key]
-						currentScore = (value & 0xFF)
-						if(score > currentScore):
-							
-							# replace current record with the higher score record
-							
-							#alignments[key] = alignment
-							alignments[key] = score
-							db[key] = line
-						elif(score == currentScore):
-							
-							# update the time repeat field of mapq value
-
-							count = ((value & 0xFFFF0000) >> 16)
-							count = count + 1
-							alignments[key] = ((count << 16) ^ currentScore)
+					if(key in pairs):
+						readPair = pairs[key]
 					else:
-						alignments[key] = score
-						db[key] = line
+						readPair = ReadPair()
+						pairs[key] = readPair
+
+					readPair.add(alignment)
+
 				else:
 					print('error: Encountered unknown alignment line: "', line, '"')
 					sys.exit(-1)
-			linecount = linecount + 1
+			
+			# progress information 
+
+			lineCount = lineCount + 1
 			if(totalLineCount == 0):
 				percentage = 0
 			else:
-				percentage = linecount * 1.0 / totalLineCount
-			sys.stdout.write('\r  line %ld (%.2f%%)' % (linecount + 1, percentage * 100))
+				percentage = lineCount * 1.0 / totalLineCount
+			sys.stdout.write('\r  line %ld (%.2f%%)' % (lineCount + 1, percentage * 100))
 			sys.stdout.flush()
 
-	# Output the result
-	print('\n* Writing results...')
-	outputFileName = 'unique.' + os.path.basename(samFileName)
-	if(options.outputfile):
-		outputFileName = options.outputfile
-		
-	# write to the output file
-	try:
-		outfile = open(outputFileName, 'w')
-	except IOError:
-		print('error: write to output file failed!')
-		sys.exit(-1)
-
-	# Output header
-
-	for header in sam.header :
-		outfile.write(header.str().strip())
-
-	# Output alignments
-
-	linecount = 0
-	for key in alignments :
-
-		# Apply the unique strategy
-
-		score = alignments[key]
-		if(((score & 0xFFFF0000) >> 16) == 0):
-			outfile.write(db[key])
-			linecount += 1
-	print('  %ld alignments written.' % (linecount))
+	print('\n  %ld lines written' % (writtenLineCount))
+	outfile.close()
+	
 	# Clear resources
 
-	db.close()
-	os.unlink(dbFileName)
+	if(isSamFileTemp):
+		os.unlink(samFileName)
 
-	print('* Finished')
+	print('* Complete')
 
 
 if __name__ == '__main__':
