@@ -25,11 +25,11 @@ def SortSamFile(inputFile, outputFile):
 
 	# Extract the header of the input SAM file
 
-	os.system('sed -n \'/^@/p;/!^@/q\' ' + inputFile + ' > ' + outputFile)
+	os.system('sed -n \'/^@/p;/!^@/q\' ' + tempFile + ' > ' + outputFile)
 
 	# Remove the header in the temp file
 
-	os.system('sed -i \'/^@/d;/!^@/q\' ' + inputFile)
+	os.system('sed -i \'/^@/d;/!^@/q\' ' + tempFile)
 
 	# Sort temp file and redirect the output 
 
@@ -205,17 +205,28 @@ class ReadPair(object):
 		return alignmentStr
 
 #
-# Unique Strategy:
+# [*] Unique Strategy:
 # Following strategies are used to find the unique & the best alignment
 #
 # 1. Keep the alignment pair that has the highest score. If more than one pairs 
 # are found to have the same "Highest Score", these pairs will be removed. 
 #
+#
+# [*] Log file Specification
+# 
+# Symbol	Description
+# -------------------------------------------------
+# ~		Error lines
+# <		Low score alignments
+# =		Pairs with more than one best score
+#
 
-def UniquePairs(pairs, outfile):
+def UniquePairs(pairs, outfile, logfile):
 	bestPair = None
 	bestScore = -1
 	scoreCount = 0
+
+	writeCount = 0
 
 	for key in pairs :
 		pairRead = pairs[key]
@@ -226,25 +237,41 @@ def UniquePairs(pairs, outfile):
 		elif(pairRead.score == bestScore):
 			scoreCount += 1
 
-	# Rule No. 1: keep the best pair
+	# no best pair found
 
-	if(scoreCount <= 0 or scoreCount >= 2):
+	if(not bestPair or scoreCount <= 0):
 		return 0
 
-	if(not bestPair):
+	# Rule No. 1: keep the best pair
+
+	for key in pairs:
+		pairRead = pairs[key]
+		if((pairRead.score == bestScore) and (scoreCount >= 2)):
+			if(pairRead.read1):
+				logfile.write('= ' + pairRead.read1.str() + '\n')
+			if(pairRead.read2):
+				logfile.write('= ' + pairRead.read2.str() + '\n')
+		elif(pairRead.score < bestScore):
+			if(pairRead.read1):
+				logfile.write('< ' + pairRead.read1.str() + '\n')
+			if(pairRead.read2):
+				logfile.write('< ' + pairRead.read2.str() + '\n')
+
+	if(scoreCount >= 2):
 		return 0
 
 	# Rule No. 2: 
 
 	# Output this pair
 
-	pairStr = bestPair.str()
-	outfile.write(pairStr + '\n')
+	if(bestPair.read1):
+		outfile.write(bestPair.read1.str() + '\n')
+		writeCount += 1
+	if(bestPair.read2):
+		outfile.write(bestPair.read2.str() + '\n')
+		writeCount += 1
 
-	if('\n' in pairStr):
-		return 2
-
-	return 1
+	return writeCount
 
 
 def main():
@@ -291,11 +318,18 @@ def main():
 		print('error: write to output file failed!')
 		sys.exit(-1)
 
+	logFileName = os.path.basename(inputFileName) + '.log'
+	try:
+		logfile = open(logFileName, 'w')
+	except IOError:
+		print('error: create log file failed!')
+		sys.exit(-1)
+
 	# processing file
 
 	print('* Analyzing...')
 	totalLineCount = opcount(samFileName)
-	print('  %ld lines found.' % totalLineCount)
+	print('  %ld lines found' % totalLineCount)
 	lineCount = 0
 	writtenLineCount = 0
 	print('* Processing...')
@@ -305,7 +339,7 @@ def main():
 		for line in samFile:
 			# build alignment dictionary 
 
-			if(re.match('^\s*$', line)):
+			if(samparser.blankLineRe.match(line)):
 				continue
 			elif(line[0] == '@'):
 				outfile.write(line)
@@ -318,7 +352,7 @@ def main():
 					groupKey  = AlignmentGroupKey(alignment)
 					if(groupKey != currentGroupKey):
 						currentGroupKey = groupKey
-						writtenLineCount += UniquePairs(pairs, outfile)
+						writtenLineCount += UniquePairs(pairs, outfile, logfile)
 						pairs.clear()
 
 					# Pair up
@@ -333,9 +367,10 @@ def main():
 					readPair.add(alignment)
 
 				else:
+					logfile.write('~ ' + line)
 					print('error: Encountered unknown alignment line: "', line, '"')
 					sys.exit(-1)
-			
+
 			# progress information 
 
 			lineCount = lineCount + 1
@@ -343,11 +378,16 @@ def main():
 				percentage = 0
 			else:
 				percentage = lineCount * 1.0 / totalLineCount
-			sys.stdout.write('\r  line %ld (%.2f%%)' % (lineCount + 1, percentage * 100))
+			sys.stdout.write('\r  line %ld (%.2f%%)' % (lineCount, percentage * 100))
 			sys.stdout.flush()
 
-	print('\n  %ld lines written' % (writtenLineCount))
+		# write the alignments in the list
+
+		writtenLineCount += UniquePairs(pairs, outfile, logfile)
+
+	print('\n  %ld alignments written' % (writtenLineCount))
 	outfile.close()
+	logfile.close()
 	
 	# Clear resources
 
