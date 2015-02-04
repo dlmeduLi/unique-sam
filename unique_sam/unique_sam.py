@@ -204,22 +204,62 @@ class ReadPair(object):
 
 		return alignmentStr
 
+	def segmentLen(self):
+		readLen = 0
+		if(self.read1):
+			readLen = len(self.read1.seq)
+		if(self.read2):
+			readLen = len(self.read2.seq)
+		if(readLen == 0):
+			return 0
+
+		# If read1 or read2 is not paired properly, return 
+		# the read length of either of them
+
+		if(not(self.read1 and self.read2)):
+			return readLen
+
+		# If the reads are paired, we define the RC read as - strand
+		# and non RC as the + strand. We will find the start positions
+		# of both + read and - read.
+
+		if((self.read1.flag & 0x10) == (self.read2.flag & 0x10)):
+			# read1 and read2 on the same strand
+			return 0
+
+		posL = 0
+		posR = 0
+		if(self.read1.flag & 0x10):
+			posR = self.read1.pos + readLen
+			posL = self.read2.pos
+		else:
+			posR = self.read2.pos + readLen
+			posL = self.read1.pos
+
+		return (posR - posL)
+
 #
 # [*] Unique Strategy:
 # Following strategies are used to find the unique & the best alignment
 #
 # 1. Keep the alignment pair that has the highest score. If more than one pairs 
-# are found to have the same "Highest Score", these pairs will be removed. 
+#    are found to have the same "Highest Score", these pairs will be removed. 
 #
+# 2. Read1 and Read2 should be mapped on different strands.
+#
+# 3. The segment length decided by the read pairs should be longer than 
+#    0.7 * read length
 #
 # [*] Log file Specification
 # 
 # Symbol	Description
 # -------------------------------------------------
-# ~		Error lines
+# !		Error lines
 # <		Low score alignments
 # =		Pairs with more than one best score
-#
+# ~		Read pair mapped on the same strand
+# ?		Segment length too short
+# 
 
 def UniquePairs(pairs, outfile, logfile):
 	bestPair = None
@@ -260,7 +300,21 @@ def UniquePairs(pairs, outfile, logfile):
 	if(scoreCount >= 2):
 		return 0
 
-	# Rule No. 2: 
+	if(bestPair.read1 and bestPair.read2):
+
+		# Rule No. 2: r1 and r2 should be on different strands
+		
+		if((bestPair.read1.flag & 0x10) == (bestPair.read2.flag & 0x10)):
+			logfile.write('~ ' + pairRead.read1.str() + '\n')
+			logfile.write('~ ' + pairRead.read2.str() + '\n')
+			return 0
+
+		# Rule No. 3: segment length >= 0.7 * read length
+
+		if(bestPair.segmentLen() <= int(round(0.7 * len(bestPair.read1.seq)))):
+			logfile.write('? ' + pairRead.read1.str() + '\n')
+			logfile.write('? ' + pairRead.read2.str() + '\n')
+			return 0
 
 	# Output this pair
 
@@ -367,7 +421,7 @@ def main():
 					readPair.add(alignment)
 
 				else:
-					logfile.write('~ ' + line)
+					logfile.write('! ' + line)
 					print('error: Encountered unknown alignment line: "', line, '"')
 					sys.exit(-1)
 
