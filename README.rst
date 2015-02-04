@@ -64,11 +64,13 @@ under current folder. Each line of the log file start with a symbol and
 followed by the deleted alignment (the original alignment record in the
 ``input.sam``). The symbol describe the reason of why this/these
 alignments should be removed. The specification of these symbols are
-listed in the follow table: \| Symbol \| Description \| \| ------ \|
------------ \| \| **!** \| Error lines \| \| **<** \| Low score
-alignments \| \| **=** \| Pairs with more than one best score \| \|
-**~** \| Read pair mapped on the same strand \| \| **?** \| Segment
-length too short \| \| --- \| ---------------------- \|
+listed in the follow table:
+
+\| Symbol \| Description \| \| ------ \| ----------- \| \| **!** \|
+Error lines \| \| **<** \| Low score alignments \| \| **=** \| Pairs
+with more than one best score \| \| **~** \| Read pair mapped on the
+same strand \| \| **?** \| Segment length too short \| \| --- \|
+---------------------- \|
 
 Copyright
 =========

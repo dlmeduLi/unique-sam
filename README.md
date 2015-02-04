@@ -40,6 +40,7 @@ Log File
 =============
 
 All removed alignments will be written into log file `input.sam.log` under current folder. Each line of the log file start with a symbol and followed by the deleted alignment (the original alignment record in the `input.sam`). The symbol describe the reason of why this/these alignments should be removed. The specification of these symbols are listed in the follow table:
+
 | Symbol | Description |
 | ------ | ----------- |
 | **!** | Error lines |
