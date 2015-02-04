@@ -48,9 +48,7 @@ All removed alignments will be written into log file `input.sam.log` under curre
 | **=** | Pairs with more than one best score |
 | **~** | Read pair mapped on the same strand |
 | **?** | Segment length too short |
-| --- | ---------------------- |
  
 Copyright
 ========
 Copyright (c) 2015 [dlmeduLi@163.com](mailto:dlmeduLi@163.com)
-
