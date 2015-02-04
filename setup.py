@@ -28,7 +28,7 @@ setup(
     keywords = "bioinformatic samfile unique",
     url = "https://github.com/dlmeduLi/uniqe-sam",
     packages=find_packages(),
-    install_requires=['libsam'],
+    install_requires=['libsam>=0.1.3'],
     long_description=read('README.rst'),
     classifiers=[
         "Development Status :: 3 - Alpha",
