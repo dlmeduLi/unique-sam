@@ -238,9 +238,13 @@ def UniquePairs(pairs, outfile):
 
 	# Output this pair
 
-	outfile.write(bestPair.str() + '\n')
+	pairStr = bestPair.str()
+	outfile.write(pairStr + '\n')
 
-	return 2
+	if('\n' in pairStr):
+		return 2
+
+	return 1
 
 
 def main():
