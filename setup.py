@@ -19,7 +19,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "uniquesam",
+    name = "unique-sam",
     version = "0.1.0",
     author = "dlmeduLi",
     author_email = "dlmeduLi@163.com",
