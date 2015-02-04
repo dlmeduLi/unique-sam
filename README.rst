@@ -31,12 +31,33 @@ Install
 Usage
 =====
 
-**unique-sam** need a SAM format file to run properly. In your command
-line environment:
+**unique-sam** need a SAM format file to run properly. Before using
+``unique-sam`` command, we must sort the sam file by the
+``QNAME``\ field. You can use ``samtools`` to achieve this purpose,
+refer to samtools for more helps:
+
+.. code:: bash
+
+    samtools sort --help
+
+For basic usage, in your command line environment:
 
 .. code:: bash
 
     unique-sam input.sam -o output.sam
+
+    **NOTE**: If you don't have access to samtools, you can use **-s**
+    option of ``unique-sam``:
+
+    .. code:: shell
+
+        unique-sam -s input.sam -o output.sam
+
+    The sort functionality of ``unique-sam`` is implemented as
+
+    1. copy a temp file from the original sam file
+    2. extract the header of the sam file
+    3. sort the alignments with Bash ``sort`` program
 
 For more about **unique-sam** run:
 

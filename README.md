@@ -18,10 +18,24 @@ After installation you can access **unique-sam** from your command line.
 
 Usage
 =====
-**unique-sam** need a SAM format file to run properly. In your command line environment:
+**unique-sam** need a SAM format file to run properly. Before using `unique-sam` command, we must sort the sam file by the `QNAME`field. You can use `samtools` to achieve this purpose, refer to samtools for more helps:
+```bash
+samtools sort --help
+```
+For basic usage, in your command line environment:
 ```bash
 unique-sam input.sam -o output.sam
 ```
+> **NOTE**: If you don't have access to samtools, you can use **-s** option of `unique-sam`:
+> ```shell
+> unique-sam -s input.sam -o output.sam
+> ```
+> The sort functionality of `unique-sam` is implemented as
+> 
+> 1. copy a temp file from the original sam file
+> 2. extract the header of the sam file
+> 3. sort the alignments with Bash `sort` program 
+
 For more about **unique-sam** run:
 ```bash
 unique-sam --help
@@ -52,3 +66,5 @@ All removed alignments will be written into log file `input.sam.log` under curre
 Copyright
 ========
 Copyright (c) 2015 [dlmeduLi@163.com](mailto:dlmeduLi@163.com)
+
+
