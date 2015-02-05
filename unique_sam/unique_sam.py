@@ -25,11 +25,11 @@ def SortSamFile(inputFile, outputFile):
 
 	# Extract the header of the input SAM file
 
-	os.system('sed -n \'/^@/p;/!^@/q\' ' + tempFile + ' > ' + outputFile)
+	os.system('sed -n \'/^@/p;/^[^@]/q\' ' + tempFile + ' > ' + outputFile)
 
 	# Remove the header in the temp file
 
-	os.system('sed -i \'/^@/d;/!^@/q\' ' + tempFile)
+	os.system('sed -i \'/^@/d;/^[^@]/q\' ' + tempFile)
 
 	# Sort temp file and redirect the output 
 
