@@ -440,6 +440,7 @@ def main():
 		writtenLineCount += UniquePairs(pairs, outfile, logfile)
 
 	print('\n  %ld alignments written' % (writtenLineCount))
+	samFile.close()
 	outfile.close()
 	logfile.close()
 	
