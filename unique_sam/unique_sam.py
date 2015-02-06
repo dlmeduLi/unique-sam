@@ -52,10 +52,11 @@ def opcount(fname):
 # Calculate the key an alignment
 # The algrithm should make sure that one key identify one unique read
 
+readKeyRe = re.compile('.*\/[1-2]$')
 def AlignmentKey(alignment):
 	# Get the tag of QNAME without read number
 	key = alignment.qname
-	if(re.match('.*\/[1-2]$', alignment.qname)):
+	if(readKeyRe.match(alignment.qname)):
 		tags = re.split('/', alignment.qname)
 		key = tags[0]
 
@@ -68,7 +69,7 @@ def AlignmentKey(alignment):
 
 def AlignmentGroupKey(alignment):
 	key = alignment.qname
-	if(re.match('.*\/[1-2]$', alignment.qname)):
+	if(readKeyRe.match(alignment.qname)):
 		tags = re.split('/', alignment.qname)
 		key = tags[0]
 
@@ -91,8 +92,8 @@ def EvaluateAlignmentCigar(cigar):
 
 		# calculate a score from cigar
 
-		nums = re.findall('[0-9]+', cigar)
-		tags = re.findall('[MIDNSHPX=]', cigar)
+		nums = samparser.tagNumRe.findall(cigar)
+		tags = samparser.cigarTagRe.findall(cigar)
 
 		if(len(nums) != len(tags)):
 			return 255
@@ -119,7 +120,7 @@ def EvaluateAlignmentCigar(cigar):
 #		The retur value of this function should be in range [0, 2^-16 -1]
 
 def EvaluateAlignmentMD(mdstr):	
-	if(not re.compile('[0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)*').match(mdstr)):
+	if(not samparser.mdRe.match(mdstr)):
 
 		# unavaliable MD value
 
@@ -128,16 +129,18 @@ def EvaluateAlignmentMD(mdstr):
 
 		# get match numbers
 
-		nums = re.findall('[0-9]+', mdstr)
-		nmis = len(re.findall('[A-Z]', mdstr))
+		tags = samparser.mdTagRe.findall(mdstr)
 		
-		i = 0
+
 		ntotal = 0
 		nmatch = 0
-		while (i < len(nums)):
-			nmatch += int(nums[i])
-			i = i + 1
-		ntotal = nmatch + nmis
+		for tag in tags:
+			if(tag.isdigit()):
+				tagLen = int(tag)
+				nmatch += tagLen
+				ntotal += tagLen
+			elif(tag.isalpha()):
+				ntotal += len(tag)
 
 		if(ntotal != 0):
 			return int(round(100.0 * nmatch / ntotal))
