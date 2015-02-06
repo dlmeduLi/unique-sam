@@ -334,7 +334,7 @@ def UniquePairs(pairs, outfile, logfile):
 def main():
 	# parse the command line options
 	usage = 'usage: %prog [options] input.sam -o output.sam'
-	parser = OptionParser(usage=usage, version='%prog 1.0.0')
+	parser = OptionParser(usage=usage, version='%prog 0.1.5')
 	parser.add_option('-o', '--output-file', dest='outputfile',
 						help='write the result to output file')
 	parser.add_option('-s', '--sort', 
