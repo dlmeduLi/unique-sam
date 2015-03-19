@@ -20,7 +20,7 @@ def read(fname):
 
 setup(
     name = "unique-sam",
-    version = "0.1.6",
+    version = "0.1.7",
     author = "dlmeduLi",
     author_email = "dlmeduLi@163.com",
     description = ("Analyse sam file and keep the unique aligment record."),
@@ -28,7 +28,7 @@ setup(
     keywords = "bioinformatic samfile unique",
     url = "https://github.com/dlmeduLi/uniqe-sam",
     packages=find_packages(),
-    install_requires=['libsam>=0.1.4'],
+    install_requires=['libsam>=0.1.6'],
     long_description=read('README.rst'),
     classifiers=[
         "Development Status :: 3 - Alpha",
