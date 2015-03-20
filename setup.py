@@ -20,7 +20,7 @@ def read(fname):
 
 setup(
     name = "unique-sam",
-    version = "0.1.8",
+    version = "0.1.9",
     author = "dlmeduLi",
     author_email = "dlmeduLi@163.com",
     description = ("Analyse sam file and keep the unique aligment record."),
