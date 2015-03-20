@@ -90,7 +90,8 @@ listed in the follow table:
 \| Symbol \| Description \| \| ------ \| ----------- \| \| **!** \|
 Error lines \| \| **<** \| Low score alignments \| \| **=** \| Pairs
 with more than one best score \| \| **~** \| Read pair mapped on the
-same strand \| \| **?** \| Segment length too short \|
+same strand \| \| **?** \| Segment length too short \| \| **-** \|
+Invalid read1/2 information in flag filed or unmapped segment \|
 
 Copyright
 =========

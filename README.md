@@ -62,6 +62,7 @@ All removed alignments will be written into log file `input.sam.log` under curre
 | **=** | Pairs with more than one best score |
 | **~** | Read pair mapped on the same strand |
 | **?** | Segment length too short |
+| **-** | Invalid read1/2 information in flag filed or unmapped segment |
  
 Copyright
 ========

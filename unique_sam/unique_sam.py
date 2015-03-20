@@ -18,27 +18,14 @@ def SortSamFile(inputFile, outputFile):
 	if(not os.path.exists(inputFile)):
 		return False
 
-	# Make a copy of the original input file
-
-	tempFile = 'tmp.' + os.path.basename(inputFile) + '.~'
-	os.system('cp ' + inputFile + ' ' + tempFile)
-
 	# Extract the header of the input SAM file
 
-	os.system('sed -n \'/^@/p;/^[^@]/q\' ' + tempFile + ' > ' + outputFile)
+	os.system('sed -n \'/^@/p;/^[^@]/q\' ' + inputFile + ' > ' + outputFile)
 
 	# Remove the header in the temp file
 
-	os.system('sed -i \'/^@/d;/^[^@]/q\' ' + tempFile)
-
-	# Sort temp file and redirect the output 
-
-	os.system('sort ' + tempFile + ' >> ' + outputFile)
-
-	# Remove temp files
-
-	os.unlink(tempFile)
-
+	os.system('sed -n \'/^@/d;/^[^@]/p\' ' + inputFile + ' | sort >> ' + outputFile)
+	
 	return True
 
 # Count file lines
@@ -193,6 +180,9 @@ class ReadPair(object):
 		elif(alignment.flag & 0x80):
 			self.read2 = alignment
 			self.updateScore()
+		else:
+			return False
+		return True
 
 	def str(self):
 		alignmentStr = ''
@@ -421,7 +411,10 @@ def main():
 						readPair = ReadPair()
 						pairs[key] = readPair
 
-					readPair.add(alignment)
+					# alignment without map information (read1 or read2)
+
+					if(not readPair.add(alignment)):
+						logfile.write('- ' + line)
 
 				else:
 					logfile.write('! ' + line)
