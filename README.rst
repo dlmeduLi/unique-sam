@@ -49,33 +49,35 @@ For basic usage, in your command line environment:
 -s Parameter
 ~~~~~~~~~~~~
 
-    If you don't have access to samtools, you can use **-s** option of
-    ``unique-sam``:
+If you don't have access to samtools, you can use **-s** option of
+``unique-sam``:
 
-    .. code:: shell
+.. code:: shell
 
-        unique-sam -s input.sam -o output.sam
+    unique-sam -s input.sam -o output.sam
 
-    The sort functionality of ``unique-sam`` is implemented as
+The sort functionality of ``unique-sam`` is implemented as
 
-    1. copy a temp file from the original sam file
-    2. extract the header of the sam file
-    3. sort the alignments with Bash ``sort`` program
+1. copy a temp file from the original sam file
+2. extract the header of the sam file
+3. sort the alignments with Bash ``sort`` program
 
 -k Parameter
 ~~~~~~~~~~~~
 
-    ``-k`` parameter give you the control on how to extract the
-    alignment key from qname field the parameter of the ``-k`` is a
-    regular expression. You should group the key part with parentheses.
-    e.g. qname:
-    ``N|GACGCGGATCTT/500407:4:H03E5AFXX:1:21109:5977:6969_2:N:0:ATACAA``
-    ``-k '(.*)\_[1-2](.*)'`` key will be:
-    ``N|GACGCGGATCTT/500407:4:H03E5AFXX:1:21109:5977:6969:N:0:ATACAA``
-    which will remove the ``_1/2`` part of the qname. e.g. qname:
-    ``HWI-ST667_0147:1:1101:1128:2079#CGATGT/1`` ``-k '(.*)\/[1-2]'``
-    key will be: ``HWI-ST667_0147:1:1101:1128:2079#CGATGT`` which will
-    remove the ``/1/2`` part of the qname.
+``-k`` parameter give you the control on how to extract the alignment
+key from qname field the parameter of the ``-k`` is a regular
+expression. You should group the key part with parentheses. \*\* e.g.
+1\*\* > qname:
+``N|GACGCGGATCTT/500407:4:H03E5AFXX:1:21109:5977:6969_2:N:0:ATACAA`` > >
+``-k '(.*)\_[1-2](.*)'`` > > key will be:
+``N|GACGCGGATCTT/500407:4:H03E5AFXX:1:21109:5977:6969:N:0:ATACAA`` >
+which will remove the ``_1/2`` part of the qname.
+
+\*\* e.g. 2\*\* > qname: ``HWI-ST667_0147:1:1101:1128:2079#CGATGT/1`` >
+> ``-k '(.*)\/[1-2]'`` > > key will be:
+``HWI-ST667_0147:1:1101:1128:2079#CGATGT`` > which will remove the
+``/1/2`` part of the qname.
 
 For more about **unique-sam** run:
 

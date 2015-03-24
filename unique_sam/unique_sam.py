@@ -36,14 +36,12 @@ def opcount(fname):
 			pass
 	return i + 1
 
-# Calculate the key an alignment
-# The algrithm should make sure that one key identify one unique read
+# Get the qname tag
 
-def AlignmentKey(alignment, keyRe):
-	# Get the tag of QNAME without read number
-	key = alignment.qname
+def QNameKey(qname, keyRe):
+	key = qname
 	if keyRe :
-		if(keyRe.match(alignment.qname)):
+		if(keyRe.match(qname)):
 			tags = keyRe.findall(key)
 			if(len(tags) > 0):
 				key = ''
@@ -52,6 +50,14 @@ def AlignmentKey(alignment, keyRe):
 				elif(type(tags[0]) is tuple):
 					for s in tags[0] :
 						key += s
+	return key
+
+# Calculate the key an alignment
+# The algrithm should make sure that one key identify one unique read
+
+def AlignmentKey(alignment, keyRe):
+	# Get the tag of QNAME without read number
+	key = QNameKey(alignment.qname, keyRe)
 
 	if(alignment.flag & 0x40):
 		key += (':' + str(alignment.pos) + ':' + str(alignment.pnext))
@@ -61,7 +67,7 @@ def AlignmentKey(alignment, keyRe):
 	return key
 
 def AlignmentGroupKey(alignment, keyRe):
-	return AlignmentKey(alignment, keyRe)
+	return QNameKey(alignment.qname, keyRe)
 
 #
 # EvaluateAlignmentCigar:
