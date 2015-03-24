@@ -39,13 +39,19 @@ def opcount(fname):
 # Calculate the key an alignment
 # The algrithm should make sure that one key identify one unique read
 
-readKeyRe = re.compile('.*\/[1-2]$')
-def AlignmentKey(alignment):
+def AlignmentKey(alignment, keyRe):
 	# Get the tag of QNAME without read number
 	key = alignment.qname
-	if(readKeyRe.match(alignment.qname)):
-		tags = re.split('/', alignment.qname)
-		key = tags[0]
+	if keyRe :
+		if(keyRe.match(alignment.qname)):
+			tags = keyRe.findall(key)
+			if(len(tags) > 0):
+				key = ''
+				if(type(tags[0]) is str):
+					key = tags[0]
+				elif(type(tags[0]) is tuple):
+					for s in tags[0] :
+						key += s
 
 	if(alignment.flag & 0x40):
 		key += (':' + str(alignment.pos) + ':' + str(alignment.pnext))
@@ -54,13 +60,8 @@ def AlignmentKey(alignment):
 
 	return key
 
-def AlignmentGroupKey(alignment):
-	key = alignment.qname
-	if(readKeyRe.match(alignment.qname)):
-		tags = re.split('/', alignment.qname)
-		key = tags[0]
-
-	return key
+def AlignmentGroupKey(alignment, keyRe):
+	return AlignmentKey(alignment, keyRe)
 
 #
 # EvaluateAlignmentCigar:
@@ -330,6 +331,8 @@ def main():
 	parser.add_option('-s', '--sort', 
 						action="store_true", dest="sort", default=False,
 						help='sort the input SAM file before further processing')
+	parser.add_option('-k', '--key-reg', dest="keyreg",
+						help='qname regular expression to extract the alignment key')
 
 	(options, args) = parser.parse_args()
 	if(len(args) != 1):
@@ -352,6 +355,12 @@ def main():
 	if(not os.path.exists(samFileName)):
 		print('error: Failed to open file "', samFileName, '"')
 		sys.exit(-1)
+
+	# Prepare the qname key
+
+	alignmentKeyReg = None
+	if(options.keyreg):
+		alignmentKeyReg = re.compile(options.keyreg)
 
 	# prepare the output file
 
@@ -396,7 +405,8 @@ def main():
 					
 					# Write result
 
-					groupKey  = AlignmentGroupKey(alignment)
+					groupKey  = AlignmentGroupKey(alignment, alignmentKeyReg)
+					print(groupKey)
 					if(groupKey != currentGroupKey):
 						currentGroupKey = groupKey
 						writtenLineCount += UniquePairs(pairs, outfile, logfile)
@@ -404,7 +414,8 @@ def main():
 
 					# Pair up
 
-					key = AlignmentKey(alignment)
+					key = AlignmentKey(alignment, alignmentKeyReg)
+					print(key)
 					if(key in pairs):
 						readPair = pairs[key]
 					else:
