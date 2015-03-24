@@ -406,7 +406,6 @@ def main():
 					# Write result
 
 					groupKey  = AlignmentGroupKey(alignment, alignmentKeyReg)
-					print(groupKey)
 					if(groupKey != currentGroupKey):
 						currentGroupKey = groupKey
 						writtenLineCount += UniquePairs(pairs, outfile, logfile)
@@ -415,7 +414,6 @@ def main():
 					# Pair up
 
 					key = AlignmentKey(alignment, alignmentKeyReg)
-					print(key)
 					if(key in pairs):
 						readPair = pairs[key]
 					else:
